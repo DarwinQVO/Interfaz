@@ -320,27 +320,74 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
             z-index: 1000;
             align-items: center;
             justify-content: center;
         }
 
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
         .modal-content {
             background-color: var(--white);
             border-radius: 8px;
-            padding: 30px;
             width: 90%;
             max-width: 600px;
             max-height: 90vh;
-            overflow-y: auto;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            z-index: 1001;
+        }
+
+        .modal-content.active {
+            z-index: 1002;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+        }
+
+        .modal-content.side-by-side {
+            max-width: 500px;
+            width: 45%;
+        }
+
+        .modal-content.left-modal {
+            left: 27%;
+            transform: translate(-50%, -50%);
+        }
+
+        .modal-content.right-modal {
+            left: 73%;
+            transform: translate(-50%, -50%);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 20px 30px;
+            background-color: var(--light-gray);
+            border-radius: 8px 8px 0 0;
+            cursor: move;
+            user-select: none;
+        }
+
+        .modal-header.dragging {
+            cursor: grabbing;
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: calc(90vh - 80px);
+            overflow-y: auto;
         }
 
         .close-btn {
@@ -713,141 +760,152 @@
     </div>
 
     <!-- Modals -->
+    <!-- Modal Backdrop -->
+    <div id="modalBackdrop" class="modal-backdrop" style="display: none;" onclick="closeAllModals()"></div>
+
     <!-- Add Source Modal -->
-    <div id="addSourceModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="addSourceModal" class="modal" style="pointer-events: none;">
+        <div class="modal-content" id="sourceModalContent" style="pointer-events: auto;">
+            <div class="modal-header" id="sourceModalHeader">
                 <h2>Add New Source</h2>
                 <button class="close-btn" onclick="closeModal('addSourceModal')">&times;</button>
             </div>
             
-            <form id="addSourceForm">
-                <div class="form-group">
-                    <label for="sourceTitle">Title</label>
-                    <input type="text" id="sourceTitle" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="sourceUrl">URL (optional)</label>
-                    <input type="url" id="sourceUrl">
-                </div>
-                
-                <div class="form-group">
-                    <label for="sourceType">Type</label>
-                    <select id="sourceType" required>
-                        <option value="">Select type...</option>
-                        <option value="article">Article</option>
-                        <option value="book">Book</option>
-                        <option value="video">Video</option>
-                        <option value="paper">Research Paper</option>
-                        <option value="website">Website</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="sourceContent">Content</label>
-                    <div class="editor-toolbar">
-                        <button type="button" class="editor-btn" onclick="formatText('bold')"><b>B</b></button>
-                        <button type="button" class="editor-btn" onclick="formatText('italic')"><i>I</i></button>
-                        <button type="button" class="editor-btn" onclick="insertLink()">🔗</button>
-                        <button type="button" class="editor-btn" onclick="insertImage()">🖼️</button>
+            <div class="modal-body">
+                <form id="addSourceForm">
+                    <div class="form-group">
+                        <label for="sourceTitle">Title</label>
+                        <input type="text" id="sourceTitle" required>
                     </div>
-                    <div id="sourceContent" class="rich-editor" contenteditable="true"></div>
-                </div>
-                
-                <button type="submit" class="btn" style="width: 100%;">Save Source</button>
-            </form>
+                    
+                    <div class="form-group">
+                        <label for="sourceUrl">URL (optional)</label>
+                        <input type="url" id="sourceUrl">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sourceType">Type</label>
+                        <select id="sourceType" required>
+                            <option value="">Select type...</option>
+                            <option value="article">Article</option>
+                            <option value="book">Book</option>
+                            <option value="video">Video</option>
+                            <option value="paper">Research Paper</option>
+                            <option value="website">Website</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sourceContent">Content</label>
+                        <div class="editor-toolbar">
+                            <button type="button" class="editor-btn" onclick="formatText('bold')"><b>B</b></button>
+                            <button type="button" class="editor-btn" onclick="formatText('italic')"><i>I</i></button>
+                            <button type="button" class="editor-btn" onclick="insertLink()">🔗</button>
+                            <button type="button" class="editor-btn" onclick="insertImage()">🖼️</button>
+                        </div>
+                        <div id="sourceContent" class="rich-editor" contenteditable="true"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="width: 100%;">Save Source</button>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Add Quote Modal -->
-    <div id="addQuoteModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="addQuoteModal" class="modal" style="pointer-events: none;">
+        <div class="modal-content" id="quoteModalContent" style="pointer-events: auto;">
+            <div class="modal-header" id="quoteModalHeader">
                 <h2>Add New Quote</h2>
                 <button class="close-btn" onclick="closeModal('addQuoteModal')">&times;</button>
             </div>
             
-            <form id="addQuoteForm">
-                <div class="form-group">
-                    <label for="quoteText">Quote</label>
-                    <textarea id="quoteText" required placeholder="Enter the quote text..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quoteSource">Source</label>
-                    <div style="display: flex; gap: 10px;">
-                        <select id="quoteSource" style="flex: 1;">
-                            <option value="">Select source (optional)...</option>
-                            <!-- Sources will be populated here -->
-                        </select>
-                        <button type="button" class="btn btn-secondary" onclick="openAddSourceModal(true)" style="white-space: nowrap;">
-                            + New Source
-                        </button>
+            <div class="modal-body">
+                <form id="addQuoteForm">
+                    <div class="form-group">
+                        <label for="quoteText">Quote</label>
+                        <textarea id="quoteText" required placeholder="Enter the quote text..."></textarea>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quoteAttribution">Attribution/Author</label>
-                    <input type="text" id="quoteAttribution" placeholder="Who said this?">
-                </div>
-                
-                <div class="form-group">
-                    <label for="quoteNotes">Notes (optional)</label>
-                    <textarea id="quoteNotes" placeholder="Additional context or thoughts..."></textarea>
-                </div>
-                
-                <button type="submit" class="btn" style="width: 100%;">Save Quote</button>
-            </form>
+                    
+                    <div class="form-group">
+                        <label for="quoteSource">Source</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="quoteSource" style="flex: 1;">
+                                <option value="">Select source (optional)...</option>
+                                <!-- Sources will be populated here -->
+                            </select>
+                            <button type="button" class="btn btn-secondary" onclick="openAddSourceModal(true)" style="white-space: nowrap;">
+                                + New Source
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quoteAttribution">Attribution/Author</label>
+                        <input type="text" id="quoteAttribution" placeholder="Who said this?">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quoteNotes">Notes (optional)</label>
+                        <textarea id="quoteNotes" placeholder="Additional context or thoughts..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="width: 100%;">Save Quote</button>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="settingsModal" class="modal" style="pointer-events: none;">
+        <div class="modal-content" id="settingsModalContent" style="pointer-events: auto;">
+            <div class="modal-header" id="settingsModalHeader">
                 <h2>Settings</h2>
                 <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
             </div>
             
-            <div class="form-group">
-                <h3>Database Connection</h3>
-                <p style="margin-bottom: 10px; font-size: 14px; color: var(--secondary);">
-                    Connection status: <span id="dbStatus" style="font-weight: bold;">Checking...</span>
-                </p>
+            <div class="modal-body">
+                <div class="form-group">
+                    <h3>Database Connection</h3>
+                    <p style="margin-bottom: 10px; font-size: 14px; color: var(--secondary);">
+                        Connection status: <span id="dbStatus" style="font-weight: bold;">Checking...</span>
+                    </p>
+                    
+                    <label for="dbUri">Neo4j URI</label>
+                    <input type="text" id="dbUri" value="neo4j+s://e5d00669.databases.neo4j.io" readonly>
+                </div>
                 
-                <label for="dbUri">Neo4j URI</label>
-                <input type="text" id="dbUri" value="neo4j+s://e5d00669.databases.neo4j.io" readonly>
+                <div class="form-group">
+                    <label for="dbUser">Username</label>
+                    <input type="text" id="dbUser" value="neo4j" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <h3>Display Options</h3>
+                    <label>
+                        <input type="checkbox" id="showPreview" checked onchange="togglePreviewMode()">
+                        Show content previews
+                    </label>
+                </div>
+                
+                <button class="btn" onclick="testConnection()">Test Connection</button>
             </div>
-            
-            <div class="form-group">
-                <label for="dbUser">Username</label>
-                <input type="text" id="dbUser" value="neo4j" readonly>
-            </div>
-            
-            <div class="form-group">
-                <h3>Display Options</h3>
-                <label>
-                    <input type="checkbox" id="showPreview" checked onchange="togglePreviewMode()">
-                    Show content previews
-                </label>
-            </div>
-            
-            <button class="btn" onclick="testConnection()">Test Connection</button>
         </div>
     </div>
 
     <!-- Search Results Modal -->
-    <div id="searchResultsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="searchResultsModal" class="modal" style="pointer-events: none;">
+        <div class="modal-content" id="searchResultsModalContent" style="pointer-events: auto;">
+            <div class="modal-header" id="searchResultsModalHeader">
                 <h2>Search Results</h2>
                 <button class="close-btn" onclick="closeModal('searchResultsModal')">&times;</button>
             </div>
             
-            <div id="searchResultsContent">
-                <!-- Results will be displayed here -->
+            <div class="modal-body">
+                <div id="searchResultsContent">
+                    <!-- Results will be displayed here -->
+                </div>
             </div>
         </div>
     </div>
@@ -867,12 +925,106 @@
         let currentViewMode = 'list';
         let embeddingPipeline = null;
 
+        // Edit source function
+        async function editSource(sourceId) {
+            const source = sources.find(s => s.id === sourceId);
+            if (!source) return;
+            
+            // Set form to edit mode
+            const form = document.getElementById('addSourceForm');
+            form.dataset.editId = sourceId;
+            
+            // Update modal title and button
+            document.querySelector('#addSourceModal .modal-header h2').textContent = 'Edit Source';
+            document.querySelector('#addSourceForm button[type="submit"]').textContent = 'Update Source';
+            
+            // Fill form with current values
+            document.getElementById('sourceTitle').value = source.title;
+            document.getElementById('sourceUrl').value = source.url || '';
+            document.getElementById('sourceType').value = source.type || '';
+            document.getElementById('sourceContent').innerHTML = source.content || '';
+            
+            openModal('addSourceModal');
+        }
+
+        // Edit quote function
+        async function editQuote(quoteId) {
+            const quote = quotes.find(q => q.id === quoteId);
+            if (!quote) return;
+            
+            // Set form to edit mode
+            const form = document.getElementById('addQuoteForm');
+            form.dataset.editId = quoteId;
+            
+            // Update modal title and button
+            document.querySelector('#addQuoteModal .modal-header h2').textContent = 'Edit Quote';
+            document.querySelector('#addQuoteForm button[type="submit"]').textContent = 'Update Quote';
+            
+            // Populate source dropdown first
+            const select = document.getElementById('quoteSource');
+            select.innerHTML = '<option value="">Select source (optional)...</option>' +
+                sources.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+            
+            // Fill form with current values
+            document.getElementById('quoteText').value = quote.text;
+            document.getElementById('quoteAttribution').value = quote.attribution || '';
+            document.getElementById('quoteNotes').value = quote.notes || '';
+            document.getElementById('quoteSource').value = quote.sourceId || '';
+            
+            openModal('addQuoteModal');
+        }
+
+        // Link orphaned quote to source
+        async function linkQuoteToSource(quoteId) {
+            const quote = quotes.find(q => q.id === quoteId);
+            if (!quote) return;
+            
+            // Open edit modal with quote data
+            editQuote(quoteId);
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             await initializeDatabase();
             await setupVectorIndex();
             await loadEmbeddingModel();
             await loadData();
+            
+            // Initialize draggable modals
+            initializeDraggableModals();
+            
+            // Make functions globally accessible AFTER they're defined but BEFORE updateUI
+            window.editSource = editSource;
+            window.editQuote = editQuote;
+            window.deleteSource = deleteSource;
+            window.deleteQuote = deleteQuote;
+            window.viewSourceDetail = viewSourceDetail;
+            window.viewQuoteDetail = viewQuoteDetail;
+            window.closeDetailView = closeDetailView;
+            window.createSourceFromQuote = createSourceFromQuote;
+            window.linkQuoteToSource = linkQuoteToSource;
+            window.setViewMode = setViewMode;
+            window.sortSources = sortSources;
+            window.sortQuotes = sortQuotes;
+            window.switchSection = switchSection;
+            window.openAddSourceModal = openAddSourceModal;
+            window.openAddQuoteModal = openAddQuoteModal;
+            window.openQuickAddModal = openQuickAddModal;
+            window.openSettingsModal = openSettingsModal;
+            window.closeModal = closeModal;
+            window.closeAllModals = closeAllModals;
+            window.performVectorSearch = performVectorSearch;
+            window.handleDetailTextSelection = handleDetailTextSelection;
+            window.createQuoteFromSelection = createQuoteFromSelection;
+            window.addQuoteButton = addQuoteButton;
+            window.extractQuotesFromSource = extractQuotesFromSource;
+            window.togglePreview = togglePreview;
+            window.togglePreviewMode = togglePreviewMode;
+            window.testConnection = testConnection;
+            window.formatText = formatText;
+            window.insertLink = insertLink;
+            window.insertImage = insertImage;
+            
             updateUI();
             
             // Setup form listeners
@@ -886,6 +1038,94 @@
                 }
             });
         });
+
+        // Draggable Modal System
+        let activeModals = [];
+        
+        function initializeDraggableModals() {
+            const modalHeaders = [
+                { header: 'sourceModalHeader', content: 'sourceModalContent' },
+                { header: 'quoteModalHeader', content: 'quoteModalContent' },
+                { header: 'settingsModalHeader', content: 'settingsModalContent' },
+                { header: 'searchResultsModalHeader', content: 'searchResultsModalContent' }
+            ];
+
+            modalHeaders.forEach(({ header, content }) => {
+                const headerElement = document.getElementById(header);
+                const contentElement = document.getElementById(content);
+                
+                if (headerElement && contentElement) {
+                    makeDraggable(headerElement, contentElement);
+                    
+                    // Add click event to bring modal to front
+                    contentElement.addEventListener('mousedown', function() {
+                        bringToFront(contentElement);
+                    });
+                }
+            });
+        }
+
+        function bringToFront(modalContent) {
+            // Remove active class from all modals
+            document.querySelectorAll('.modal-content').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            
+            // Add active class to clicked modal
+            modalContent.classList.add('active');
+        }
+
+        function makeDraggable(headerElement, modalContent) {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            headerElement.addEventListener('mousedown', dragStart);
+
+            function dragStart(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+
+                if (e.target.closest('.close-btn')) {
+                    return;
+                }
+
+                isDragging = true;
+                headerElement.classList.add('dragging');
+                bringToFront(modalContent);
+                
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    modalContent.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px))`;
+                }
+            }
+
+            function dragEnd(e) {
+                initialX = currentX;
+                initialY = currentY;
+
+                isDragging = false;
+                headerElement.classList.remove('dragging');
+                
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', dragEnd);
+            }
+        }
 
         // Database functions
         async function initializeDatabase() {
@@ -996,7 +1236,10 @@
         }
 
         async function loadEmbeddingModel() {
-            if (!window.transformers) return;
+            if (!window.TransformersJS && !window.transformers) {
+                console.warn('Transformers.js not loaded - vector search will not work');
+                return;
+            }
             
             try {
                 const { pipeline } = window.transformers;
@@ -1039,6 +1282,7 @@
                     url: data.url,
                     type: data.type,
                     content: data.fullContent || '',
+                    fullContent: data.fullContent || '',
                     createdAt: data.createdAt
                 };
             });
@@ -1292,39 +1536,47 @@
             
             const detailBody = document.getElementById('detailBody');
             detailBody.innerHTML = `
-                <div class="detail-meta">
-                    <div>Type: ${source.type || 'Not specified'}</div>
-                    <div>Added: ${new Date(source.createdAt).toLocaleDateString()}</div>
-                    ${source.url ? `<div><a href="${source.url}" target="_blank">View original →</a></div>` : ''}
-                </div>
-                
-                <div class="detail-content">
-                    ${source.content || '<p style="color: var(--secondary); font-style: italic;">No content available</p>'}
-                </div>
-                
-                <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
-                    <h3>Actions</h3>
-                    <div class="quick-actions">
-                        <button class="btn" onclick="extractQuotesFromSource('${source.id}'); closeDetailView();">
-                            Extract Quotes
-                        </button>
-                        <button class="btn btn-secondary" onclick="editSource('${source.id}')">
-                            Edit
-                        </button>
-                        <button class="btn delete-btn" onclick="deleteSource('${source.id}')">
-                            Delete
-                        </button>
+                <div data-source-id="${source.id}">
+                    <div class="detail-meta">
+                        <div>Type: ${source.type || 'Not specified'}</div>
+                        <div>Added: ${new Date(source.createdAt).toLocaleDateString()}</div>
+                        ${source.url ? `<div><a href="${source.url}" target="_blank">View original →</a></div>` : ''}
                     </div>
-                </div>
-                
-                <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
-                    <h3>Related Quotes</h3>
-                    ${quotes.filter(q => q.sourceId === source.id).map(quote => `
-                        <div class="card quote-card" style="margin: 10px 0;">
-                            <div>"${quote.text}"</div>
-                            ${quote.attribution ? `<div class="quote-attribution">— ${quote.attribution}</div>` : ''}
+                    
+                    <div class="detail-content" onmouseup="handleDetailTextSelection(event, '${source.id}')">
+                        ${source.content || '<p style="color: var(--secondary); font-style: italic;">No content available</p>'}
+                    </div>
+                    
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                        <h3>Actions</h3>
+                        <div class="quick-actions">
+                            <button class="btn" onclick="addQuoteButton('${source.id}')">
+                                + Add Quote from Selection
+                            </button>
+                            <button class="btn btn-secondary" onclick="editSource('${source.id}')">
+                                Edit
+                            </button>
+                            <button class="btn delete-btn" onclick="deleteSource('${source.id}')">
+                                Delete
+                            </button>
                         </div>
-                    `).join('') || '<p style="color: var(--secondary);">No quotes from this source yet</p>'}
+                    </div>
+                    
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                        <h3>Related Quotes (${quotes.filter(q => q.sourceId === source.id).length})</h3>
+                        ${quotes.filter(q => q.sourceId === source.id).map(quote => `
+                            <div class="card quote-card" style="margin: 10px 0;">
+                                <div>"${quote.text}"</div>
+                                ${quote.attribution ? `<div class="quote-attribution">— ${quote.attribution}</div>` : ''}
+                            </div>
+                        `).join('') || '<p style="color: var(--secondary);">No quotes from this source yet</p>'}
+                    </div>
+                    
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray); background-color: var(--light-gray);">
+                        <p style="font-size: 14px; color: var(--secondary); text-align: center; margin: 0;">
+                            💡 Tip: Select any text above and click the popup OR use "Add Quote from Selection" button
+                        </p>
+                    </div>
                 </div>
             `;
             
@@ -1608,12 +1860,13 @@
                 title: document.getElementById('sourceTitle').value,
                 url: document.getElementById('sourceUrl').value,
                 type: document.getElementById('sourceType').value,
-                content: document.getElementById('sourceContent').innerHTML,
+                fullContent: document.getElementById('sourceContent').innerHTML,
+                content: document.getElementById('sourceContent').innerHTML, // Keep both for compatibility
                 createdAt: isEditMode ? sources.find(s => s.id === editId)?.createdAt : new Date().toISOString()
             };
 
             // Generate embedding
-            const textForEmbedding = `${source.title} ${source.type} ${stripHtml(source.content).substring(0, 1000)}`;
+            const textForEmbedding = `${source.title} ${source.type} ${stripHtml(source.fullContent).substring(0, 1000)}`;
             const embedding = await generateEmbedding(textForEmbedding);
 
             if (isEditMode) {
@@ -1623,7 +1876,7 @@
                     SET s.title = $title,
                         s.url = $url,
                         s.type = $type,
-                        s.fullContent = $content,
+                        s.fullContent = $fullContent,
                         s.embedding = $embedding
                 `, { ...source, embedding: embedding || [] });
                 
@@ -1646,7 +1899,7 @@
                         title: $title,
                         url: $url,
                         type: $type,
-                        fullContent: $content,
+                        fullContent: $fullContent,
                         createdAt: $createdAt,
                         embedding: $embedding
                     })
@@ -1744,63 +1997,6 @@
         `;
         document.head.appendChild(style);
 
-        // Update viewSourceDetail to add data attribute
-        function viewSourceDetail(sourceId) {
-            const source = sources.find(s => s.id === sourceId);
-            if (!source) return;
-            
-            document.getElementById('detailTitle').textContent = source.title;
-            document.getElementById('detailType').textContent = `Source • ${source.type || 'Unknown type'}`;
-            
-            const detailBody = document.getElementById('detailBody');
-            detailBody.innerHTML = `
-                <div data-source-id="${source.id}">
-                    <div class="detail-meta">
-                        <div>Type: ${source.type || 'Not specified'}</div>
-                        <div>Added: ${new Date(source.createdAt).toLocaleDateString()}</div>
-                        ${source.url ? `<div><a href="${source.url}" target="_blank">View original →</a></div>` : ''}
-                    </div>
-                    
-                    <div class="detail-content" onmouseup="handleDetailTextSelection(event, '${source.id}')">
-                        ${source.content || '<p style="color: var(--secondary); font-style: italic;">No content available</p>'}
-                    </div>
-                    
-                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
-                        <h3>Actions</h3>
-                        <div class="quick-actions">
-                            <button class="btn" onclick="addQuoteButton('${source.id}')">
-                                + Add Quote from Selection
-                            </button>
-                            <button class="btn btn-secondary" onclick="editSource('${source.id}')">
-                                Edit
-                            </button>
-                            <button class="btn delete-btn" onclick="deleteSource('${source.id}')">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
-                        <h3>Related Quotes (${quotes.filter(q => q.sourceId === source.id).length})</h3>
-                        ${quotes.filter(q => q.sourceId === source.id).map(quote => `
-                            <div class="card quote-card" style="margin: 10px 0;">
-                                <div>"${quote.text}"</div>
-                                ${quote.attribution ? `<div class="quote-attribution">— ${quote.attribution}</div>` : ''}
-                            </div>
-                        `).join('') || '<p style="color: var(--secondary);">No quotes from this source yet</p>'}
-                    </div>
-                    
-                    <div style="padding: 30px; border-top: 1px solid var(--light-gray); background-color: var(--light-gray);">
-                        <p style="font-size: 14px; color: var(--secondary); text-align: center; margin: 0;">
-                            💡 Tip: Select any text above and click the popup OR use "Add Quote from Selection" button
-                        </p>
-                    </div>
-                </div>
-            `;
-            
-            openDetailView();
-        }
-
         // Sort functions
         function sortSources(criteria) {
             document.querySelectorAll('.sort-option').forEach(opt => opt.classList.remove('active'));
@@ -1811,7 +2007,7 @@
                     sources.sort((a, b) => a.title.localeCompare(b.title));
                     break;
                 case 'type':
-                    sources.sort((a, b) => a.type.localeCompare(b.type));
+                    sources.sort((a, b) => (a.type || '').localeCompare(b.type || ''));
                     break;
                 case 'recent':
                 default:
@@ -1842,11 +2038,43 @@
 
         // Modal functions
         function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'block';
+            
+            // Add to active modals tracking
+            if (!activeModals.includes(modalId)) {
+                activeModals.push(modalId);
+            }
+            
+            // Show backdrop only if it's the first modal
+            if (activeModals.length === 1) {
+                document.getElementById('modalBackdrop').style.display = 'block';
+            }
+            
+            // Reset position for draggable modals
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.transform = 'translate(-50%, -50%)';
+                bringToFront(modalContent);
+            }
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
+            
+            // Remove from active modals
+            activeModals = activeModals.filter(id => id !== modalId);
+            
+            // Hide backdrop if no modals are open
+            if (activeModals.length === 0) {
+                document.getElementById('modalBackdrop').style.display = 'none';
+            }
+            
+            // Reset modal classes
+            const modalContent = document.getElementById(modalId).querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.classList.remove('side-by-side', 'left-modal', 'right-modal', 'active');
+            }
             
             // Reset forms when closing
             if (modalId === 'addSourceModal') {
@@ -1855,6 +2083,13 @@
                 delete document.getElementById('addSourceForm').dataset.editId;
                 document.querySelector('#addSourceModal .modal-header h2').textContent = 'Add New Source';
                 document.querySelector('#addSourceForm button[type="submit"]').textContent = 'Save Source';
+                
+                // If quote modal is still open, reset its position
+                if (activeModals.includes('addQuoteModal')) {
+                    const quoteModal = document.getElementById('quoteModalContent');
+                    quoteModal.classList.remove('side-by-side', 'left-modal');
+                    quoteModal.style.transform = 'translate(-50%, -50%)';
+                }
             } else if (modalId === 'addQuoteModal') {
                 document.getElementById('addQuoteForm').reset();
                 delete document.getElementById('addQuoteForm').dataset.editId;
@@ -1863,10 +2098,28 @@
             }
         }
 
+        function closeAllModals() {
+            // Only close if clicking backdrop, not if clicking on a modal
+            if (event.target.id === 'modalBackdrop') {
+                activeModals.forEach(modalId => {
+                    closeModal(modalId);
+                });
+                activeModals = [];
+                document.getElementById('modalBackdrop').style.display = 'none';
+            }
+        }
+
         function openAddSourceModal(fromQuoteModal = false) {
             if (fromQuoteModal) {
                 // Store that we came from quote modal
                 document.getElementById('addSourceForm').dataset.returnToQuote = 'true';
+                
+                // Position modals side by side
+                const quoteModal = document.getElementById('quoteModalContent');
+                const sourceModal = document.getElementById('sourceModalContent');
+                
+                quoteModal.classList.add('side-by-side', 'left-modal');
+                sourceModal.classList.add('side-by-side', 'right-modal');
             }
             openModal('addSourceModal');
         }
@@ -2164,6 +2417,7 @@
         }
 
         function stripHtml(html) {
+            if (!html) return '';
             const tmp = document.createElement('div');
             tmp.innerHTML = html;
             return tmp.textContent || tmp.innerText || '';
@@ -2201,37 +2455,6 @@
             const showPreview = document.getElementById('showPreview').checked;
             // Implementation for toggling preview mode
         }
-
-        // Make functions globally accessible
-        window.editSource = editSource;
-        window.editQuote = editQuote;
-        window.deleteSource = deleteSource;
-        window.deleteQuote = deleteQuote;
-        window.viewSourceDetail = viewSourceDetail;
-        window.viewQuoteDetail = viewQuoteDetail;
-        window.closeDetailView = closeDetailView;
-        window.createSourceFromQuote = createSourceFromQuote;
-        window.linkQuoteToSource = linkQuoteToSource;
-        window.setViewMode = setViewMode;
-        window.sortSources = sortSources;
-        window.sortQuotes = sortQuotes;
-        window.switchSection = switchSection;
-        window.openAddSourceModal = openAddSourceModal;
-        window.openAddQuoteModal = openAddQuoteModal;
-        window.openQuickAddModal = openQuickAddModal;
-        window.openSettingsModal = openSettingsModal;
-        window.closeModal = closeModal;
-        window.performVectorSearch = performVectorSearch;
-        window.handleDetailTextSelection = handleDetailTextSelection;
-        window.createQuoteFromSelection = createQuoteFromSelection;
-        window.addQuoteButton = addQuoteButton;
-        window.extractQuotesFromSource = extractQuotesFromSource;
-        window.togglePreview = togglePreview;
-        window.togglePreviewMode = togglePreviewMode;
-        window.testConnection = testConnection;
-        window.formatText = formatText;
-        window.insertLink = insertLink;
-        window.insertImage = insertImage;
     </script>
 </body>
 </html>
