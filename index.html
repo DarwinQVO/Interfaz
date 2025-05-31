@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Notes - Minimal</title>
+    <script src="https://unpkg.com/neo4j-driver@5.13.0/lib/browser/neo4j-web.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --text: #2c3e50;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --white: #ffffff;
+            --success: #27ae60;
+            --hover: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            color: var(--text);
+            background-color: var(--white);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: var(--light-gray);
+            border-right: 1px solid var(--medium-gray);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 28px;
+            font-weight: normal;
+            margin-bottom: 30px;
+            color: var(--primary);
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: normal;
+            margin: 20px 0 15px 0;
+            color: var(--primary);
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: normal;
+            margin: 15px 0 10px 0;
+            color: var(--secondary);
+        }
+
+        /* Navigation */
+        .nav-item {
+            padding: 12px 16px;
+            margin: 4px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-item:hover {
+            background-color: var(--hover);
+        }
+
+        .nav-item.active {
+            background-color: var(--white);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Search */
+        .search-container {
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-family: 'Times New Roman', Times, serif;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .ai-search-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .ai-search-btn:hover {
+            background-color: var(--secondary);
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--white);
+            border: 1px solid var(--light-gray);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        /* Detail View */
+        .detail-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100vh;
+            background-color: var(--white);
+            box-shadow: -4px 0 12px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .detail-header {
+            padding: 30px;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .detail-content {
+            padding: 30px;
+            line-height: 1.8;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 14px;
+            color: var(--secondary);
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background-color: var(--light-gray);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .view-option {
+            padding: 6px 12px;
+            background-color: transparent;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .view-option.active {
+            background-color: var(--white);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Edge Cases Section */
+        .edge-cases-banner {
+            background-color: #fff9e6;
+            border: 1px solid #f0d000;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .edge-cases-banner.error {
+            background-color: #ffebee;
+            border-color: #ef5350;
+        }
+
+        /* Grid View */
+        .grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .grid-view .card {
+            margin-bottom: 0;
+        }
+
+        /* List View */
+        .list-view .card {
+            display: flex;
+            align-items: start;
+            gap: 20px;
+        }
+
+        .list-view .card-main {
+            flex: 1;
+        }
+
+        .list-view .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .quote-card {
+            border-left: 3px solid var(--primary);
+            font-style: italic;
+            padding-left: 24px;
+        }
+
+        .source-card {
+            position: relative;
+        }
+
+        .source-meta {
+            font-size: 14px;
+            color: var(--secondary);
+            margin-top: 10px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary);
+        }
+
+        .btn-secondary {
+            background-color: var(--white);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--light-gray);
+        }
+
+        .add-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            border-radius: 8px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--secondary);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 16px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Rich Text Editor */
+        .rich-editor {
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            min-height: 200px;
+            padding: 12px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .rich-editor:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            border-bottom: 1px solid var(--medium-gray);
+            margin-bottom: 12px;
+        }
+
+        .editor-btn {
+            padding: 4px 8px;
+            background-color: var(--white);
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .editor-btn:hover {
+            background-color: var(--light-gray);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--light-gray);
+            border-top: 1px solid var(--medium-gray);
+            padding: 8px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--medium-gray);
+        }
+
+        .status-dot.connected {
+            background-color: var(--success);
+        }
+
+        /* Settings */
+        .settings-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--secondary);
+        }
+
+        /* Sort Options */
+        .sort-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sort-option {
+            padding: 6px 12px;
+            background-color: var(--white);
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .sort-option.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--secondary);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .mb-2 { margin-bottom: 20px; }
+        .mb-3 { margin-bottom: 30px; }
+        .text-center { text-align: center; }
+
+        /* Link styling */
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        a:hover {
+            border-bottom-color: var(--primary);
+        }
+
+        /* Quote Attribution */
+        .quote-attribution {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--secondary);
+            font-style: normal;
+        }
+
+        /* Content Preview */
+        .content-preview {
+            max-height: 150px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .content-preview.expanded {
+            max-height: none;
+        }
+
+        .expand-btn {
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Selection Popup */
+        .selection-popup {
+            position: absolute;
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .selection-popup:hover {
+            background-color: var(--secondary);
+        }
+
+        /* Delete button styling */
+        .delete-btn {
+            background-color: #e53e3e;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #c53030;
+        }
+
+        /* Quick action buttons */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>Research Notes</h2>
+            
+            <div class="search-container">
+                <input type="text" id="aiSearchInput" class="search-input" placeholder="Search with AI...">
+                <button class="ai-search-btn" onclick="performVectorSearch()">Smart Search</button>
+            </div>
+
+            <nav>
+                <div class="nav-item active" data-section="sources" onclick="switchSection('sources')">
+                    📚 Sources
+                </div>
+                <div class="nav-item" data-section="quotes" onclick="switchSection('quotes')">
+                    💬 Quotes
+                </div>
+            </nav>
+
+            <div style="margin-top: 30px;">
+                <h3>Quick Actions</h3>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="openAddSourceModal()">
+                    + Add Source
+                </button>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="openAddQuoteModal()">
+                    + Add Quote
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sources Section -->
+            <div id="sourcesSection" class="section">
+                <h1>Sources Library</h1>
+                
+                <div class="view-toggle">
+                    <button class="view-option active" onclick="setViewMode('list')">List</button>
+                    <button class="view-option" onclick="setViewMode('grid')">Grid</button>
+                    <button class="view-option" onclick="setViewMode('edge')">Edge Cases</button>
+                </div>
+                
+                <div id="sourceEdgeCases" class="hidden">
+                    <!-- Edge cases alerts will appear here -->
+                </div>
+                
+                <div class="sort-container">
+                    <div class="sort-option active" onclick="sortSources('recent')">Recent</div>
+                    <div class="sort-option" onclick="sortSources('title')">Title</div>
+                    <div class="sort-option" onclick="sortSources('type')">Type</div>
+                </div>
+
+                <div id="sourcesList" class="sources-list list-view">
+                    <!-- Sources will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Quotes Section -->
+            <div id="quotesSection" class="section hidden">
+                <h1>Quotes Collection</h1>
+                
+                <div class="view-toggle">
+                    <button class="view-option active" onclick="setViewMode('list')">List</button>
+                    <button class="view-option" onclick="setViewMode('grid')">Grid</button>
+                    <button class="view-option" onclick="setViewMode('orphaned')">Orphaned</button>
+                </div>
+                
+                <div id="quoteEdgeCases" class="hidden">
+                    <!-- Edge cases alerts will appear here -->
+                </div>
+                
+                <div class="sort-container">
+                    <div class="sort-option active" onclick="sortQuotes('recent')">Recent</div>
+                    <div class="sort-option" onclick="sortQuotes('source')">By Source</div>
+                    <div class="sort-option" onclick="sortQuotes('relevance')">AI Relevance</div>
+                </div>
+
+                <div id="quotesList" class="quotes-list list-view">
+                    <!-- Quotes will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Icon -->
+    <div class="settings-icon" onclick="openSettingsModal()">⚙️</div>
+
+    <!-- Detail View Panel -->
+    <div id="detailView" class="detail-view">
+        <div class="detail-header">
+            <div>
+                <h2 id="detailTitle"></h2>
+                <div id="detailType" style="color: var(--secondary); font-size: 14px; margin-top: 5px;"></div>
+            </div>
+            <button class="close-btn" onclick="closeDetailView()">&times;</button>
+        </div>
+        <div id="detailBody">
+            <!-- Detail content will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="btn add-btn" onclick="openQuickAddModal()">+</button>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="connection-status">
+            <span class="status-dot" id="connectionDot"></span>
+            <span id="connectionText">Connecting to database...</span>
+        </div>
+        <div>
+            <span id="itemCount">0 items</span>
+        </div>
+    </div>
+
+    <!-- Selection Popup -->
+    <div id="selectionPopup" class="selection-popup" onclick="createQuoteFromSelection()">
+        + Add as Quote
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Source Modal -->
+    <div id="addSourceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Source</h2>
+                <button class="close-btn" onclick="closeModal('addSourceModal')">&times;</button>
+            </div>
+            
+            <form id="addSourceForm">
+                <div class="form-group">
+                    <label for="sourceTitle">Title</label>
+                    <input type="text" id="sourceTitle" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sourceUrl">URL (optional)</label>
+                    <input type="url" id="sourceUrl">
+                </div>
+                
+                <div class="form-group">
+                    <label for="sourceType">Type</label>
+                    <select id="sourceType" required>
+                        <option value="">Select type...</option>
+                        <option value="article">Article</option>
+                        <option value="book">Book</option>
+                        <option value="video">Video</option>
+                        <option value="paper">Research Paper</option>
+                        <option value="website">Website</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sourceContent">Content</label>
+                    <div class="editor-toolbar">
+                        <button type="button" class="editor-btn" onclick="formatText('bold')"><b>B</b></button>
+                        <button type="button" class="editor-btn" onclick="formatText('italic')"><i>I</i></button>
+                        <button type="button" class="editor-btn" onclick="insertLink()">🔗</button>
+                        <button type="button" class="editor-btn" onclick="insertImage()">🖼️</button>
+                    </div>
+                    <div id="sourceContent" class="rich-editor" contenteditable="true"></div>
+                </div>
+                
+                <button type="submit" class="btn" style="width: 100%;">Save Source</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Quote Modal -->
+    <div id="addQuoteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Quote</h2>
+                <button class="close-btn" onclick="closeModal('addQuoteModal')">&times;</button>
+            </div>
+            
+            <form id="addQuoteForm">
+                <div class="form-group">
+                    <label for="quoteText">Quote</label>
+                    <textarea id="quoteText" required placeholder="Enter the quote text..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quoteSource">Source</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="quoteSource" style="flex: 1;">
+                            <option value="">Select source (optional)...</option>
+                            <!-- Sources will be populated here -->
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="openAddSourceModal(true)" style="white-space: nowrap;">
+                            + New Source
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quoteAttribution">Attribution/Author</label>
+                    <input type="text" id="quoteAttribution" placeholder="Who said this?">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quoteNotes">Notes (optional)</label>
+                    <textarea id="quoteNotes" placeholder="Additional context or thoughts..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn" style="width: 100%;">Save Quote</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <h3>Database Connection</h3>
+                <p style="margin-bottom: 10px; font-size: 14px; color: var(--secondary);">
+                    Connection status: <span id="dbStatus" style="font-weight: bold;">Checking...</span>
+                </p>
+                
+                <label for="dbUri">Neo4j URI</label>
+                <input type="text" id="dbUri" value="neo4j+s://e5d00669.databases.neo4j.io" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="dbUser">Username</label>
+                <input type="text" id="dbUser" value="neo4j" readonly>
+            </div>
+            
+            <div class="form-group">
+                <h3>Display Options</h3>
+                <label>
+                    <input type="checkbox" id="showPreview" checked onchange="togglePreviewMode()">
+                    Show content previews
+                </label>
+            </div>
+            
+            <button class="btn" onclick="testConnection()">Test Connection</button>
+        </div>
+    </div>
+
+    <!-- Search Results Modal -->
+    <div id="searchResultsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Search Results</h2>
+                <button class="close-btn" onclick="closeModal('searchResultsModal')">&times;</button>
+            </div>
+            
+            <div id="searchResultsContent">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Neo4j Configuration
+        const NEO4J_URI = "neo4j+s://e5d00669.databases.neo4j.io";
+        const NEO4J_USER = "neo4j";
+        const NEO4J_PASSWORD = "Ol59FQKG3YzEGi-o9R0LAMsvEFZcsf_vjXVVCVM9RMI";
+
+        // Global variables
+        let driver = null;
+        let isConnected = false;
+        let sources = [];
+        let quotes = [];
+        let currentSection = 'sources';
+        let currentViewMode = 'list';
+        let embeddingPipeline = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeDatabase();
+            await setupVectorIndex();
+            await loadEmbeddingModel();
+            await loadData();
+            updateUI();
+            
+            // Setup form listeners
+            document.getElementById('addSourceForm').addEventListener('submit', handleAddSource);
+            document.getElementById('addQuoteForm').addEventListener('submit', handleAddQuote);
+            
+            // Setup search on Enter key
+            document.getElementById('aiSearchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performVectorSearch();
+                }
+            });
+        });
+
+        // Database functions
+        async function initializeDatabase() {
+            try {
+                driver = neo4j.driver(
+                    NEO4J_URI,
+                    neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD),
+                    { 
+                        disableLosslessIntegers: true,
+                        connectionTimeout: 30000,
+                        maxConnectionLifetime: 3600000,
+                        maxConnectionPoolSize: 10
+                    }
+                );
+
+                await testConnection();
+                isConnected = true;
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Database connection failed:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function testConnection() {
+            const session = driver.session();
+            try {
+                await session.run('RETURN 1');
+                return true;
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                return false;
+            } finally {
+                await session.close();
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('connectionDot');
+            const text = document.getElementById('connectionText');
+            
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Connected to database';
+                document.getElementById('dbStatus').textContent = 'Connected';
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Database offline';
+                document.getElementById('dbStatus').textContent = 'Disconnected';
+            }
+        }
+
+        async function writeQuery(cypher, params = {}) {
+            if (!isConnected) return;
+
+            const session = driver.session({ defaultAccessMode: neo4j.session.WRITE });
+            try {
+                const result = await session.run(cypher, params);
+                return result;
+            } catch (error) {
+                console.error('Write query failed:', error);
+                throw error;
+            } finally {
+                await session.close();
+            }
+        }
+
+        async function readQuery(cypher, params = {}) {
+            if (!isConnected) return [];
+
+            const session = driver.session();
+            try {
+                const result = await session.run(cypher, params);
+                return result.records;
+            } catch (error) {
+                console.error('Read query failed:', error);
+                return [];
+            } finally {
+                await session.close();
+            }
+        }
+
+        // Vector search setup
+        async function setupVectorIndex() {
+            try {
+                await writeQuery(`
+                    CREATE VECTOR INDEX source_embeddings IF NOT EXISTS
+                    FOR (s:Source) 
+                    ON s.embedding
+                    OPTIONS {indexConfig: {
+                        \`vector.dimensions\`: 384,
+                        \`vector.similarity_function\`: 'cosine'
+                    }}
+                `);
+
+                await writeQuery(`
+                    CREATE VECTOR INDEX quote_embeddings IF NOT EXISTS
+                    FOR (q:Quote) 
+                    ON q.embedding
+                    OPTIONS {indexConfig: {
+                        \`vector.dimensions\`: 384,
+                        \`vector.similarity_function\`: 'cosine'
+                    }}
+                `);
+            } catch (error) {
+                console.error('Error creating vector indices:', error);
+            }
+        }
+
+        async function loadEmbeddingModel() {
+            if (!window.transformers) return;
+            
+            try {
+                const { pipeline } = window.transformers;
+                embeddingPipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+            } catch (error) {
+                console.error('Error loading embedding model:', error);
+            }
+        }
+
+        async function generateEmbedding(text) {
+            if (!embeddingPipeline) return null;
+            
+            try {
+                const output = await embeddingPipeline(text, { pooling: 'mean', normalize: true });
+                return Array.from(output.data);
+            } catch (error) {
+                console.error('Error generating embedding:', error);
+                return null;
+            }
+        }
+
+        // Data loading
+        async function loadData() {
+            await loadSources();
+            await loadQuotes();
+        }
+
+        async function loadSources() {
+            const records = await readQuery(`
+                MATCH (s:Source)
+                RETURN s
+                ORDER BY s.createdAt DESC
+            `);
+
+            sources = records.map(record => {
+                const data = record.get('s').properties;
+                return {
+                    id: data.id,
+                    title: data.title,
+                    url: data.url,
+                    type: data.type,
+                    content: data.fullContent || '',
+                    createdAt: data.createdAt
+                };
+            });
+        }
+
+        async function loadQuotes() {
+            const records = await readQuery(`
+                MATCH (q:Quote)
+                OPTIONAL MATCH (q)-[:FROM_SOURCE]->(s:Source)
+                RETURN q, s
+                ORDER BY q.createdAt DESC
+            `);
+
+            quotes = records.map(record => {
+                const quoteData = record.get('q').properties;
+                const sourceData = record.get('s');
+                
+                return {
+                    id: quoteData.id,
+                    text: quoteData.text,
+                    attribution: quoteData.attribution,
+                    notes: quoteData.notes,
+                    sourceId: sourceData ? sourceData.properties.id : null,
+                    sourceTitle: sourceData ? sourceData.properties.title : null,
+                    createdAt: quoteData.createdAt
+                };
+            });
+        }
+
+        // UI Functions
+        function switchSection(section) {
+            currentSection = section;
+            
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.section').forEach(sec => {
+                sec.classList.add('hidden');
+            });
+            document.getElementById(section + 'Section').classList.remove('hidden');
+            
+            updateUI();
+        }
+
+        function updateUI() {
+            if (currentSection === 'sources') {
+                renderSources();
+                document.getElementById('itemCount').textContent = `${sources.length} sources`;
+            } else {
+                renderQuotes();
+                document.getElementById('itemCount').textContent = `${quotes.length} quotes`;
+            }
+        }
+
+        function renderSources() {
+            const container = document.getElementById('sourcesList');
+            const edgeCasesContainer = document.getElementById('sourceEdgeCases');
+            
+            // Check for edge cases
+            const edgeCases = {
+                noUrl: sources.filter(s => !s.url),
+                noContent: sources.filter(s => !s.content || s.content.length < 50),
+                noType: sources.filter(s => !s.type || s.type === 'other')
+            };
+            
+            // Show edge cases banner if in edge cases view
+            if (currentViewMode === 'edge') {
+                edgeCasesContainer.innerHTML = '';
+                edgeCasesContainer.classList.remove('hidden');
+                
+                if (edgeCases.noUrl.length > 0) {
+                    edgeCasesContainer.innerHTML += `
+                        <div class="edge-cases-banner">
+                            <span>⚠️</span>
+                            <span>${edgeCases.noUrl.length} sources without URLs</span>
+                        </div>
+                    `;
+                }
+                
+                if (edgeCases.noContent.length > 0) {
+                    edgeCasesContainer.innerHTML += `
+                        <div class="edge-cases-banner error">
+                            <span>❌</span>
+                            <span>${edgeCases.noContent.length} sources with little or no content</span>
+                        </div>
+                    `;
+                }
+                
+                // Filter to show only edge cases
+                const filteredSources = sources.filter(s => 
+                    !s.url || !s.content || s.content.length < 50 || !s.type || s.type === 'other'
+                );
+                
+                if (filteredSources.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No edge cases found</h3>
+                            <p>All sources have complete information</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                renderSourcesList(filteredSources, container);
+            } else {
+                edgeCasesContainer.classList.add('hidden');
+                
+                if (sources.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No sources yet</h3>
+                            <p>Add your first source to get started</p>
+                            <button class="btn" onclick="openAddSourceModal()">Add Source</button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                renderSourcesList(sources, container);
+            }
+        }
+
+        function renderSourcesList(sourcesToRender, container) {
+            container.className = `sources-list ${currentViewMode}-view`;
+            
+            container.innerHTML = sourcesToRender.map(source => `
+                <div class="card source-card" data-id="${source.id}" onclick="viewSourceDetail('${source.id}')">
+                    <div class="card-main">
+                        <h3>${source.title}</h3>
+                        <div class="source-meta">
+                            ${source.type || 'No type'} 
+                            ${source.url ? `• <a href="${source.url}" target="_blank" onclick="event.stopPropagation()">View original</a>` : '• No URL'}
+                        </div>
+                        ${currentViewMode === 'list' && source.content ? `
+                            <div class="content-preview mb-2" id="preview-${source.id}">
+                                ${source.content.substring(0, 200)}${source.content.length > 200 ? '...' : ''}
+                            </div>
+                        ` : ''}
+                        ${currentViewMode === 'edge' ? `
+                            <div style="margin-top: 10px; font-size: 12px; color: var(--secondary);">
+                                ${!source.url ? '⚠️ Missing URL ' : ''}
+                                ${!source.content || source.content.length < 50 ? '❌ Insufficient content ' : ''}
+                                ${!source.type || source.type === 'other' ? '⚠️ Unspecified type' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${currentViewMode === 'list' ? `
+                        <div class="card-actions">
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); extractQuotesFromSource('${source.id}')">
+                                Extract
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderQuotes() {
+            const container = document.getElementById('quotesList');
+            const edgeCasesContainer = document.getElementById('quoteEdgeCases');
+            
+            let quotesToRender = quotes;
+            
+            if (currentViewMode === 'orphaned') {
+                edgeCasesContainer.innerHTML = '';
+                edgeCasesContainer.classList.remove('hidden');
+                
+                const orphanedQuotes = quotes.filter(q => !q.sourceId);
+                
+                if (orphanedQuotes.length > 0) {
+                    edgeCasesContainer.innerHTML = `
+                        <div class="edge-cases-banner">
+                            <span>📌</span>
+                            <span>${orphanedQuotes.length} quotes without sources</span>
+                        </div>
+                    `;
+                }
+                
+                quotesToRender = orphanedQuotes;
+                
+                if (quotesToRender.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No orphaned quotes</h3>
+                            <p>All quotes are linked to sources</p>
+                        </div>
+                    `;
+                    return;
+                }
+            } else {
+                edgeCasesContainer.classList.add('hidden');
+                
+                if (quotes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No quotes yet</h3>
+                            <p>Start collecting memorable quotes</p>
+                            <button class="btn" onclick="openAddQuoteModal()">Add Quote</button>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+            
+            container.className = `quotes-list ${currentViewMode === 'orphaned' ? 'list' : currentViewMode}-view`;
+            
+            container.innerHTML = quotesToRender.map(quote => `
+                <div class="card quote-card" data-id="${quote.id}" onclick="viewQuoteDetail('${quote.id}')">
+                    <div class="card-main">
+                        <div>"${quote.text}"</div>
+                        ${quote.attribution ? `
+                            <div class="quote-attribution">— ${quote.attribution}</div>
+                        ` : ''}
+                        ${quote.sourceTitle ? `
+                            <div class="source-meta">From: ${quote.sourceTitle}</div>
+                        ` : currentViewMode === 'orphaned' ? `
+                            <div class="source-meta" style="color: #e53e3e;">No source linked</div>
+                        ` : ''}
+                        ${currentViewMode === 'list' && quote.notes ? `
+                            <div style="margin-top: 10px; font-style: normal; font-size: 14px; color: var(--secondary);">
+                                ${quote.notes.substring(0, 100)}${quote.notes.length > 100 ? '...' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // View mode functions
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            
+            // Update toggle buttons
+            document.querySelectorAll('.view-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateUI();
+        }
+
+        // Detail view functions
+        function viewSourceDetail(sourceId) {
+            const source = sources.find(s => s.id === sourceId);
+            if (!source) return;
+            
+            document.getElementById('detailTitle').textContent = source.title;
+            document.getElementById('detailType').textContent = `Source • ${source.type || 'Unknown type'}`;
+            
+            const detailBody = document.getElementById('detailBody');
+            detailBody.innerHTML = `
+                <div class="detail-meta">
+                    <div>Type: ${source.type || 'Not specified'}</div>
+                    <div>Added: ${new Date(source.createdAt).toLocaleDateString()}</div>
+                    ${source.url ? `<div><a href="${source.url}" target="_blank">View original →</a></div>` : ''}
+                </div>
+                
+                <div class="detail-content">
+                    ${source.content || '<p style="color: var(--secondary); font-style: italic;">No content available</p>'}
+                </div>
+                
+                <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                    <h3>Actions</h3>
+                    <div class="quick-actions">
+                        <button class="btn" onclick="extractQuotesFromSource('${source.id}'); closeDetailView();">
+                            Extract Quotes
+                        </button>
+                        <button class="btn btn-secondary" onclick="editSource('${source.id}')">
+                            Edit
+                        </button>
+                        <button class="btn delete-btn" onclick="deleteSource('${source.id}')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                    <h3>Related Quotes</h3>
+                    ${quotes.filter(q => q.sourceId === source.id).map(quote => `
+                        <div class="card quote-card" style="margin: 10px 0;">
+                            <div>"${quote.text}"</div>
+                            ${quote.attribution ? `<div class="quote-attribution">— ${quote.attribution}</div>` : ''}
+                        </div>
+                    `).join('') || '<p style="color: var(--secondary);">No quotes from this source yet</p>'}
+                </div>
+            `;
+            
+            openDetailView();
+        }
+
+        function viewQuoteDetail(quoteId) {
+            const quote = quotes.find(q => q.id === quoteId);
+            if (!quote) return;
+            
+            document.getElementById('detailTitle').textContent = `"${quote.text.substring(0, 50)}..."`;
+            document.getElementById('detailType').textContent = 'Quote';
+            
+            const detailBody = document.getElementById('detailBody');
+            detailBody.innerHTML = `
+                <div class="detail-meta">
+                    <div>Added: ${new Date(quote.createdAt).toLocaleDateString()}</div>
+                    ${quote.sourceTitle ? `<div>Source: ${quote.sourceTitle}</div>` : ''}
+                </div>
+                
+                <div class="detail-content">
+                    <div style="font-size: 20px; font-style: italic; line-height: 1.8; margin-bottom: 20px;">
+                        "${quote.text}"
+                    </div>
+                    
+                    ${quote.attribution ? `
+                        <div style="text-align: right; font-size: 18px; color: var(--secondary);">
+                            — ${quote.attribution}
+                        </div>
+                    ` : ''}
+                    
+                    ${quote.notes ? `
+                        <div style="margin-top: 30px;">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">Notes</h4>
+                            <p>${quote.notes}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                    <h3>Actions</h3>
+                    <div class="quick-actions">
+                        <button class="btn btn-secondary" onclick="editQuote('${quote.id}')">
+                            Edit Quote
+                        </button>
+                        ${!quote.sourceId ? `
+                            <button class="btn" onclick="linkQuoteToSource('${quote.id}')">
+                                Link to Source
+                            </button>
+                            <button class="btn" onclick="createSourceFromQuote('${quote.id}')">
+                                Create Source
+                            </button>
+                        ` : ''}
+                        <button class="btn delete-btn" onclick="deleteQuote('${quote.id}')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+                
+                ${quote.sourceId ? `
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                        <h3>Source</h3>
+                        <div class="card source-card" onclick="viewSourceDetail('${quote.sourceId}')">
+                            <h4>${quote.sourceTitle}</h4>
+                            <div class="source-meta">Click to view full source</div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            openDetailView();
+        }
+
+        function openDetailView() {
+            document.getElementById('detailView').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDetailView() {
+            document.getElementById('detailView').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Simple text selection handling
+        let selectedTextData = {
+            text: '',
+            sourceId: null
+        };
+
+        function handleDetailTextSelection(event, sourceId) {
+            // Small delay to ensure selection is complete
+            setTimeout(() => {
+                const selection = window.getSelection();
+                const text = selection.toString().trim();
+                
+                if (text.length > 10) { // Minimum 10 characters
+                    selectedTextData.text = text;
+                    selectedTextData.sourceId = sourceId;
+                    
+                    // Get selection coordinates
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    
+                    // Show popup
+                    const popup = document.getElementById('selectionPopup');
+                    popup.style.position = 'fixed';
+                    popup.style.left = (rect.left + (rect.width / 2) - 60) + 'px';
+                    popup.style.top = (rect.bottom + 5) + 'px';
+                    popup.style.display = 'block';
+                }
+            }, 10);
+        }
+
+        // Hide popup when clicking elsewhere
+        document.addEventListener('mousedown', function(e) {
+            if (!e.target.closest('#selectionPopup')) {
+                document.getElementById('selectionPopup').style.display = 'none';
+            }
+        });
+
+        // Create quote from selection
+        async function createQuoteFromSelection() {
+            if (!selectedTextData.text || !selectedTextData.sourceId) {
+                showToast('Please select text first');
+                return;
+            }
+            
+            const source = sources.find(s => s.id === selectedTextData.sourceId);
+            if (!source) {
+                showToast('Source not found');
+                return;
+            }
+            
+            // Hide popup immediately
+            document.getElementById('selectionPopup').style.display = 'none';
+            
+            // Create quote
+            const quote = {
+                id: generateId(),
+                text: selectedTextData.text,
+                attribution: '',
+                notes: '',
+                sourceId: source.id,
+                sourceTitle: source.title,
+                createdAt: new Date().toISOString()
+            };
+
+            // Generate embedding
+            const embedding = await generateEmbedding(quote.text);
+
+            // Save to database
+            try {
+                await writeQuery(`
+                    CREATE (q:Quote {
+                        id: $id,
+                        text: $text,
+                        attribution: $attribution,
+                        notes: $notes,
+                        createdAt: $createdAt,
+                        embedding: $embedding
+                    })
+                    WITH q
+                    MATCH (s:Source {id: $sourceId})
+                    CREATE (q)-[:FROM_SOURCE]->(s)
+                `, { ...quote, embedding: embedding || [] });
+
+                // Add to local array
+                quotes.unshift(quote);
+                
+                // Clear selection
+                window.getSelection().removeAllRanges();
+                selectedTextData.text = '';
+                selectedTextData.sourceId = null;
+                
+                // Show success
+                showToast('✓ Quote added successfully!');
+                
+                // Refresh the source detail view to show new quote
+                setTimeout(() => {
+                    viewSourceDetail(source.id);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error creating quote:', error);
+                showToast('Error creating quote');
+            }
+        }
+
+        // Alternative: Add a button for manual quote creation
+        function addQuoteButton(sourceId) {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            
+            if (text.length === 0) {
+                showToast('Please select some text first');
+                return;
+            }
+            
+            // Pre-fill quote modal
+            openAddQuoteModal();
+            document.getElementById('quoteText').value = text;
+            document.getElementById('quoteSource').value = sourceId;
+            
+            // Clear selection
+            window.getSelection().removeAllRanges();
+        }
+
+        // Delete functions
+        async function deleteSource(sourceId) {
+            if (!confirm('Are you sure you want to delete this source? All related quotes will be unlinked.')) {
+                return;
+            }
+
+            // Delete from database
+            await writeQuery(`
+                MATCH (s:Source {id: $id})
+                OPTIONAL MATCH (q:Quote)-[r:FROM_SOURCE]->(s)
+                DELETE r, s
+            `, { id: sourceId });
+
+            // Update local data
+            sources = sources.filter(s => s.id !== sourceId);
+            
+            // Update quotes to remove source reference
+            quotes.forEach(q => {
+                if (q.sourceId === sourceId) {
+                    q.sourceId = null;
+                    q.sourceTitle = null;
+                }
+            });
+
+            closeDetailView();
+            updateUI();
+            showToast('Source deleted successfully');
+        }
+
+        async function deleteQuote(quoteId) {
+            if (!confirm('Are you sure you want to delete this quote?')) {
+                return;
+            }
+
+            // Delete from database
+            await writeQuery(`
+                MATCH (q:Quote {id: $id})
+                DETACH DELETE q
+            `, { id: quoteId });
+
+            // Update local data
+            quotes = quotes.filter(q => q.id !== quoteId);
+
+            closeDetailView();
+            updateUI();
+            showToast('Quote deleted successfully');
+        }
+
+        // Create source from quote
+        async function createSourceFromQuote(quoteId) {
+            const quote = quotes.find(q => q.id === quoteId);
+            if (!quote) return;
+
+            // Pre-fill the source modal with quote info
+            openAddSourceModal();
+            
+            // Set initial values
+            document.getElementById('sourceTitle').value = quote.attribution || 'Source for quote';
+            document.getElementById('sourceContent').innerHTML = `<blockquote>${quote.text}</blockquote>`;
+            
+            // Store quote ID to link after creation
+            document.getElementById('addSourceForm').dataset.linkQuoteId = quoteId;
+        }
+
+        // Update the source form handler to check for edit mode
+        async function handleAddSource(event) {
+            event.preventDefault();
+            
+            const editId = event.target.dataset.editId;
+            const isEditMode = !!editId;
+            
+            const source = {
+                id: isEditMode ? editId : generateId(),
+                title: document.getElementById('sourceTitle').value,
+                url: document.getElementById('sourceUrl').value,
+                type: document.getElementById('sourceType').value,
+                content: document.getElementById('sourceContent').innerHTML,
+                createdAt: isEditMode ? sources.find(s => s.id === editId)?.createdAt : new Date().toISOString()
+            };
+
+            // Generate embedding
+            const textForEmbedding = `${source.title} ${source.type} ${stripHtml(source.content).substring(0, 1000)}`;
+            const embedding = await generateEmbedding(textForEmbedding);
+
+            if (isEditMode) {
+                // Update existing source
+                await writeQuery(`
+                    MATCH (s:Source {id: $id})
+                    SET s.title = $title,
+                        s.url = $url,
+                        s.type = $type,
+                        s.fullContent = $content,
+                        s.embedding = $embedding
+                `, { ...source, embedding: embedding || [] });
+                
+                // Update local data
+                const index = sources.findIndex(s => s.id === editId);
+                if (index !== -1) {
+                    sources[index] = source;
+                }
+                
+                // Clear edit mode
+                delete event.target.dataset.editId;
+                
+                // Reset modal title
+                document.querySelector('#addSourceModal .modal-header h2').textContent = 'Add New Source';
+            } else {
+                // Create new source
+                await writeQuery(`
+                    CREATE (s:Source {
+                        id: $id,
+                        title: $title,
+                        url: $url,
+                        type: $type,
+                        fullContent: $content,
+                        createdAt: $createdAt,
+                        embedding: $embedding
+                    })
+                `, { ...source, embedding: embedding || [] });
+                
+                sources.unshift(source);
+            }
+
+            // Check if we need to link a quote
+            const linkQuoteId = event.target.dataset.linkQuoteId;
+            if (linkQuoteId) {
+                const quote = quotes.find(q => q.id === linkQuoteId);
+                if (quote) {
+                    quote.sourceId = source.id;
+                    quote.sourceTitle = source.title;
+                    
+                    // Create relationship in database
+                    await writeQuery(`
+                        MATCH (q:Quote {id: $quoteId}), (s:Source {id: $sourceId})
+                        CREATE (q)-[:FROM_SOURCE]->(s)
+                    `, { quoteId: linkQuoteId, sourceId: source.id });
+                }
+                
+                // Clear the link
+                delete event.target.dataset.linkQuoteId;
+            }
+            
+            // Check if we need to return to quote modal
+            const returnToQuote = event.target.dataset.returnToQuote === 'true';
+            if (returnToQuote) {
+                delete event.target.dataset.returnToQuote;
+                closeModal('addSourceModal');
+                
+                // Reopen quote modal and update source dropdown
+                setTimeout(() => {
+                    openAddQuoteModal();
+                    // Select the newly created source
+                    document.getElementById('quoteSource').value = source.id;
+                }, 100);
+            } else {
+                updateUI();
+                closeModal('addSourceModal');
+                
+                // If we were editing, refresh the detail view
+                if (isEditMode) {
+                    closeDetailView();
+                }
+            }
+            
+            event.target.reset();
+            document.getElementById('sourceContent').innerHTML = '';
+            
+            showToast(isEditMode ? 'Source updated successfully!' : 'Source created successfully!');
+        }
+
+        // Toast notification
+        function showToast(message) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: var(--primary);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 4px;
+                font-size: 14px;
+                z-index: 2000;
+                animation: slideUp 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideDown 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { transform: translate(-50%, 100%); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+            @keyframes slideDown {
+                from { transform: translate(-50%, 0); opacity: 1; }
+                to { transform: translate(-50%, 100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Update viewSourceDetail to add data attribute
+        function viewSourceDetail(sourceId) {
+            const source = sources.find(s => s.id === sourceId);
+            if (!source) return;
+            
+            document.getElementById('detailTitle').textContent = source.title;
+            document.getElementById('detailType').textContent = `Source • ${source.type || 'Unknown type'}`;
+            
+            const detailBody = document.getElementById('detailBody');
+            detailBody.innerHTML = `
+                <div data-source-id="${source.id}">
+                    <div class="detail-meta">
+                        <div>Type: ${source.type || 'Not specified'}</div>
+                        <div>Added: ${new Date(source.createdAt).toLocaleDateString()}</div>
+                        ${source.url ? `<div><a href="${source.url}" target="_blank">View original →</a></div>` : ''}
+                    </div>
+                    
+                    <div class="detail-content" onmouseup="handleDetailTextSelection(event, '${source.id}')">
+                        ${source.content || '<p style="color: var(--secondary); font-style: italic;">No content available</p>'}
+                    </div>
+                    
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                        <h3>Actions</h3>
+                        <div class="quick-actions">
+                            <button class="btn" onclick="addQuoteButton('${source.id}')">
+                                + Add Quote from Selection
+                            </button>
+                            <button class="btn btn-secondary" onclick="editSource('${source.id}')">
+                                Edit
+                            </button>
+                            <button class="btn delete-btn" onclick="deleteSource('${source.id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray);">
+                        <h3>Related Quotes (${quotes.filter(q => q.sourceId === source.id).length})</h3>
+                        ${quotes.filter(q => q.sourceId === source.id).map(quote => `
+                            <div class="card quote-card" style="margin: 10px 0;">
+                                <div>"${quote.text}"</div>
+                                ${quote.attribution ? `<div class="quote-attribution">— ${quote.attribution}</div>` : ''}
+                            </div>
+                        `).join('') || '<p style="color: var(--secondary);">No quotes from this source yet</p>'}
+                    </div>
+                    
+                    <div style="padding: 30px; border-top: 1px solid var(--light-gray); background-color: var(--light-gray);">
+                        <p style="font-size: 14px; color: var(--secondary); text-align: center; margin: 0;">
+                            💡 Tip: Select any text above and click the popup OR use "Add Quote from Selection" button
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            openDetailView();
+        }
+
+        // Sort functions
+        function sortSources(criteria) {
+            document.querySelectorAll('.sort-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            switch(criteria) {
+                case 'title':
+                    sources.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'type':
+                    sources.sort((a, b) => a.type.localeCompare(b.type));
+                    break;
+                case 'recent':
+                default:
+                    sources.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            }
+            
+            renderSources();
+        }
+
+        function sortQuotes(criteria) {
+            document.querySelectorAll('.sort-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            switch(criteria) {
+                case 'source':
+                    quotes.sort((a, b) => (a.sourceTitle || '').localeCompare(b.sourceTitle || ''));
+                    break;
+                case 'relevance':
+                    // This would use vector similarity in a real implementation
+                    break;
+                case 'recent':
+                default:
+                    quotes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            }
+            
+            renderQuotes();
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            
+            // Reset forms when closing
+            if (modalId === 'addSourceModal') {
+                document.getElementById('addSourceForm').reset();
+                document.getElementById('sourceContent').innerHTML = '';
+                delete document.getElementById('addSourceForm').dataset.editId;
+                document.querySelector('#addSourceModal .modal-header h2').textContent = 'Add New Source';
+                document.querySelector('#addSourceForm button[type="submit"]').textContent = 'Save Source';
+            } else if (modalId === 'addQuoteModal') {
+                document.getElementById('addQuoteForm').reset();
+                delete document.getElementById('addQuoteForm').dataset.editId;
+                document.querySelector('#addQuoteModal .modal-header h2').textContent = 'Add New Quote';
+                document.querySelector('#addQuoteForm button[type="submit"]').textContent = 'Save Quote';
+            }
+        }
+
+        function openAddSourceModal(fromQuoteModal = false) {
+            if (fromQuoteModal) {
+                // Store that we came from quote modal
+                document.getElementById('addSourceForm').dataset.returnToQuote = 'true';
+            }
+            openModal('addSourceModal');
+        }
+
+        function openAddQuoteModal() {
+            // Populate source dropdown
+            const select = document.getElementById('quoteSource');
+            select.innerHTML = '<option value="">Select source (optional)...</option>' +
+                sources.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+            
+            openModal('addQuoteModal');
+        }
+
+        function openQuickAddModal() {
+            if (currentSection === 'sources') {
+                openAddSourceModal();
+            } else {
+                openAddQuoteModal();
+            }
+        }
+
+        function openSettingsModal() {
+            openModal('settingsModal');
+        }
+
+        // Form handlers
+        async function handleAddQuote(event) {
+            event.preventDefault();
+            
+            const editId = event.target.dataset.editId;
+            const isEditMode = !!editId;
+            
+            const quote = {
+                id: isEditMode ? editId : generateId(),
+                text: document.getElementById('quoteText').value,
+                attribution: document.getElementById('quoteAttribution').value,
+                notes: document.getElementById('quoteNotes').value,
+                sourceId: document.getElementById('quoteSource').value,
+                createdAt: isEditMode ? quotes.find(q => q.id === editId)?.createdAt : new Date().toISOString()
+            };
+
+            // Get source title if selected
+            if (quote.sourceId) {
+                const source = sources.find(s => s.id === quote.sourceId);
+                quote.sourceTitle = source ? source.title : null;
+            } else {
+                quote.sourceTitle = null;
+            }
+
+            // Generate embedding
+            const textForEmbedding = `${quote.text} ${quote.attribution || ''} ${quote.notes || ''}`;
+            const embedding = await generateEmbedding(textForEmbedding);
+
+            if (isEditMode) {
+                // Update existing quote
+                const oldQuote = quotes.find(q => q.id === editId);
+                
+                // Update in database
+                await writeQuery(`
+                    MATCH (q:Quote {id: $id})
+                    SET q.text = $text,
+                        q.attribution = $attribution,
+                        q.notes = $notes,
+                        q.embedding = $embedding
+                    WITH q
+                    OPTIONAL MATCH (q)-[r:FROM_SOURCE]->()
+                    DELETE r
+                    ${quote.sourceId ? `
+                    WITH q
+                    MATCH (s:Source {id: $sourceId})
+                    CREATE (q)-[:FROM_SOURCE]->(s)
+                    ` : ''}
+                `, { ...quote, embedding: embedding || [] });
+                
+                // Update local data
+                const index = quotes.findIndex(q => q.id === editId);
+                if (index !== -1) {
+                    quotes[index] = quote;
+                }
+                
+                // Clear edit mode
+                delete event.target.dataset.editId;
+                
+                // Reset modal title and button
+                document.querySelector('#addQuoteModal .modal-header h2').textContent = 'Add New Quote';
+                document.querySelector('#addQuoteForm button[type="submit"]').textContent = 'Save Quote';
+            } else {
+                // Create new quote
+                await writeQuery(`
+                    CREATE (q:Quote {
+                        id: $id,
+                        text: $text,
+                        attribution: $attribution,
+                        notes: $notes,
+                        createdAt: $createdAt,
+                        embedding: $embedding
+                    })
+                    ${quote.sourceId ? `
+                    WITH q
+                    MATCH (s:Source {id: $sourceId})
+                    CREATE (q)-[:FROM_SOURCE]->(s)
+                    ` : ''}
+                `, { ...quote, embedding: embedding || [] });
+                
+                quotes.unshift(quote);
+            }
+
+            updateUI();
+            closeModal('addQuoteModal');
+            event.target.reset();
+            
+            showToast(isEditMode ? 'Quote updated successfully!' : 'Quote added successfully!');
+            
+            // If we were editing, close detail view
+            if (isEditMode) {
+                closeDetailView();
+            }
+        }
+
+        // Rich text editor functions
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('sourceContent').focus();
+        }
+
+        function insertLink() {
+            const url = prompt('Enter URL:');
+            if (url) {
+                const selection = window.getSelection();
+                if (selection.toString()) {
+                    document.execCommand('createLink', false, url);
+                } else {
+                    const link = prompt('Enter link text:');
+                    if (link) {
+                        document.execCommand('insertHTML', false, `<a href="${url}">${link}</a>`);
+                    }
+                }
+            }
+            document.getElementById('sourceContent').focus();
+        }
+
+        function insertImage() {
+            const url = prompt('Enter image URL:');
+            if (url) {
+                document.execCommand('insertImage', false, url);
+            }
+            document.getElementById('sourceContent').focus();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + K for link
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.id === 'sourceContent') {
+                    e.preventDefault();
+                    insertLink();
+                }
+            }
+            
+            // Ctrl/Cmd + B for bold
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.id === 'sourceContent') {
+                    e.preventDefault();
+                    formatText('bold');
+                }
+            }
+        });
+
+        // Vector search - Fixed
+        async function performVectorSearch() {
+            const searchText = document.getElementById('aiSearchInput').value.trim();
+            if (!searchText) {
+                showToast('Please enter a search term');
+                return;
+            }
+            
+            if (!embeddingPipeline) {
+                showToast('AI search is still loading, please wait...');
+                return;
+            }
+
+            // Show loading state
+            const searchBtn = document.querySelector('.ai-search-btn');
+            const originalText = searchBtn.textContent;
+            searchBtn.textContent = 'Searching...';
+            searchBtn.disabled = true;
+
+            try {
+                const searchEmbedding = await generateEmbedding(searchText);
+                if (!searchEmbedding) {
+                    showToast('Error generating search embedding');
+                    return;
+                }
+
+                // Search sources
+                const sourceResults = await readQuery(`
+                    CALL db.index.vector.queryNodes(
+                        'source_embeddings', 
+                        5, 
+                        $embedding
+                    ) YIELD node, score
+                    WHERE score > 0.3
+                    RETURN node as source, score
+                    ORDER BY score DESC
+                `, { embedding: searchEmbedding });
+
+                // Search quotes
+                const quoteResults = await readQuery(`
+                    CALL db.index.vector.queryNodes(
+                        'quote_embeddings', 
+                        5, 
+                        $embedding
+                    ) YIELD node, score
+                    WHERE score > 0.3
+                    RETURN node as quote, score
+                    ORDER BY score DESC
+                `, { embedding: searchEmbedding });
+
+                displaySearchResults(searchText, sourceResults, quoteResults);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                showToast('Error performing search');
+            } finally {
+                // Reset button
+                searchBtn.textContent = originalText;
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displaySearchResults(query, sourceResults, quoteResults) {
+            const content = document.getElementById('searchResultsContent');
+            
+            // Check if we have results
+            const hasSourceResults = sourceResults && sourceResults.length > 0;
+            const hasQuoteResults = quoteResults && quoteResults.length > 0;
+            
+            if (!hasSourceResults && !hasQuoteResults) {
+                content.innerHTML = `
+                    <h3>No results found for: "${query}"</h3>
+                    <p style="color: var(--secondary); margin-top: 20px;">
+                        Try different keywords or check your spelling.
+                    </p>
+                `;
+            } else {
+                content.innerHTML = `
+                    <h3>Results for: "${query}"</h3>
+                    
+                    <div class="mb-3">
+                        <h4>Sources (${sourceResults.length})</h4>
+                        ${hasSourceResults ? sourceResults.map(record => {
+                            const source = record.get('source').properties;
+                            const score = record.get('score');
+                            return `
+                                <div class="card" style="margin-bottom: 10px; cursor: pointer;" 
+                                     onclick="closeModal('searchResultsModal'); viewSourceDetail('${source.id}')">
+                                    <strong>${source.title}</strong>
+                                    <div class="source-meta">${source.type || 'Unknown'} • ${Math.round(score * 100)}% match</div>
+                                    ${source.fullContent ? `
+                                        <div style="font-size: 14px; color: var(--secondary); margin-top: 8px;">
+                                            ${stripHtml(source.fullContent).substring(0, 150)}...
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('') : '<p style="color: var(--secondary);">No matching sources found</p>'}
+                    </div>
+                    
+                    <div>
+                        <h4>Quotes (${quoteResults.length})</h4>
+                        ${hasQuoteResults ? quoteResults.map(record => {
+                            const quote = record.get('quote').properties;
+                            const score = record.get('score');
+                            return `
+                                <div class="card quote-card" style="margin-bottom: 10px; cursor: pointer;"
+                                     onclick="closeModal('searchResultsModal'); viewQuoteDetail('${quote.id}')">
+                                    <em>"${quote.text}"</em>
+                                    ${quote.attribution ? `<div class="quote-attribution">— ${quote.attribution}</div>` : ''}
+                                    <div class="source-meta">${Math.round(score * 100)}% match</div>
+                                </div>
+                            `;
+                        }).join('') : '<p style="color: var(--secondary);">No matching quotes found</p>'}
+                    </div>
+                `;
+            }
+            
+            openModal('searchResultsModal');
+        }
+
+        // Utility functions
+        function generateId() {
+            return 'id_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        }
+
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function togglePreview(sourceId) {
+            const preview = document.getElementById(`preview-${sourceId}`);
+            const source = sources.find(s => s.id === sourceId);
+            const btn = event.target;
+            
+            if (preview.classList.contains('expanded')) {
+                preview.classList.remove('expanded');
+                preview.innerHTML = source.content.substring(0, 200) + '...';
+                btn.textContent = 'Show more';
+            } else {
+                preview.classList.add('expanded');
+                preview.innerHTML = source.content;
+                btn.textContent = 'Show less';
+            }
+        }
+
+        function extractQuotesFromSource(sourceId) {
+            const source = sources.find(s => s.id === sourceId);
+            if (!source) return;
+            
+            // Open quote modal with source pre-selected
+            openAddQuoteModal();
+            document.getElementById('quoteSource').value = sourceId;
+            
+            // Focus on quote text field
+            document.getElementById('quoteText').focus();
+        }
+
+        function togglePreviewMode() {
+            const showPreview = document.getElementById('showPreview').checked;
+            // Implementation for toggling preview mode
+        }
+
+        // Make functions globally accessible
+        window.editSource = editSource;
+        window.editQuote = editQuote;
+        window.deleteSource = deleteSource;
+        window.deleteQuote = deleteQuote;
+        window.viewSourceDetail = viewSourceDetail;
+        window.viewQuoteDetail = viewQuoteDetail;
+        window.closeDetailView = closeDetailView;
+        window.createSourceFromQuote = createSourceFromQuote;
+        window.linkQuoteToSource = linkQuoteToSource;
+        window.setViewMode = setViewMode;
+        window.sortSources = sortSources;
+        window.sortQuotes = sortQuotes;
+        window.switchSection = switchSection;
+        window.openAddSourceModal = openAddSourceModal;
+        window.openAddQuoteModal = openAddQuoteModal;
+        window.openQuickAddModal = openQuickAddModal;
+        window.openSettingsModal = openSettingsModal;
+        window.closeModal = closeModal;
+        window.performVectorSearch = performVectorSearch;
+        window.handleDetailTextSelection = handleDetailTextSelection;
+        window.createQuoteFromSelection = createQuoteFromSelection;
+        window.addQuoteButton = addQuoteButton;
+        window.extractQuotesFromSource = extractQuotesFromSource;
+        window.togglePreview = togglePreview;
+        window.togglePreviewMode = togglePreviewMode;
+        window.testConnection = testConnection;
+        window.formatText = formatText;
+        window.insertLink = insertLink;
+        window.insertImage = insertImage;
+    </script>
+</body>
+</html>
